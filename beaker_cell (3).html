@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비커앤셀 - 내 손안의 가상 실험실</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        labDark: '#0b111e',
+                        labGlass: 'rgba(20, 30, 55, 0.6)',
+                        labMint: '#10b981',
+                        labNeonMint: '#34d399',
+                        labBlue: '#0ea5e9',
+                        labNeonBlue: '#38bdf8',
+                        labCrimson: '#ef4444'
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        sans: ['Noto Sans KR', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Glassmorphism custom styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .text-glow-blue {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+        .text-glow-mint {
+            text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+        }
+        .beaker-liquid {
+            transition: height 1.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 1s ease;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.9);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(52, 211, 153, 0.6);
+        }
+        /* Grid background pattern */
+        .lab-grid-bg {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+        /* Keyframe animations */
+        @keyframes bubble {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(0.6); opacity: 0; }
+        }
+        .bubble-element {
+            animation: bubble 3s infinite ease-in;
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+        }
+        .pulse-glow {
+            animation: pulse-slow 4s infinite ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        /* Microscopic view zooming */
+        .micro-scale {
+            transition: transform 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-labDark text-slate-100 min-h-screen font-sans flex flex-col overflow-x-hidden lab-grid-bg">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="glass-panel sticky top-0 z-40 px-6 py-4 flex items-center justify-between border-b border-white/10">
+        <div class="flex items-center gap-3">
+            <!-- Logo Icon (Beaker & DNA) -->
+            <div class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-labBlue to-labMint p-[2px]">
+                <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-flask text-labNeonBlue text-lg absolute -translate-x-1 -translate-y-1"></i>
+                    <i class="fa-solid fa-dna text-labNeonMint text-xs absolute translate-x-1.5 translate-y-1.5"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="font-orbitron font-black text-xl tracking-wider bg-gradient-to-r from-labNeonBlue to-labNeonMint bg-clip-text text-transparent">BEAKER & CELL</h1>
+                <p class="text-[10px] text-slate-400 tracking-widest uppercase">Virtual Micro Science Lab</p>
+            </div>
+        </div>
+
+        <!-- Mode Selectors -->
+        <nav class="hidden md:flex items-center gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-white/5">
+            <button onclick="switchTab('lab')" id="tab-btn-lab" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-labBlue/20 to-labBlue/10 text-labNeonBlue border border-labBlue/30">
+                <i class="fa-solid fa-flask"></i> 화학 실험실
+            </button>
+            <button onclick="switchTab('cell')" id="tab-btn-cell" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-microscope"></i> 생명 현미경
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-vial-circle-check"></i> 킬러 퀴즈룸
+            </button>
+            <button onclick="switchTab('log')" id="tab-btn-log" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-clipboard-list"></i> 연구 일지
+            </button>
+        </nav>
+
+        <!-- User Stats Badge -->
+        <div class="flex items-center gap-4">
+            <div class="hidden sm:flex items-center gap-3 bg-white/5 px-3.5 py-1.5 rounded-full border border-white/10">
+                <span class="text-xs text-slate-400 flex items-center gap-1"><i class="fa-solid fa-award text-yellow-400"></i> 연구 마스터리 :</span>
+                <span id="header-mastery" class="text-sm font-bold font-orbitron text-labNeonMint">140 XP</span>
+            </div>
+            <!-- Quick Help Icon -->
+            <button onclick="toggleHelpModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10 text-slate-300 transition-all">
+                <i class="fa-regular fa-circle-question"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MOBILE NAVIGATION (Visible on small screens) -->
+    <div class="md:hidden glass-panel fixed bottom-0 left-0 right-0 z-50 flex justify-around p-3 border-t border-white/10">
+        <button onclick="switchTab('lab')" class="mobile-tab-btn flex flex-col items-center gap-1 text-labNeonBlue" id="m-tab-btn-lab">
+            <i class="fa-solid fa-flask text-lg"></i>
+            <span class="text-[10px]">화학</span>
+        </button>
+        <button onclick="switchTab('cell')" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400" id="m-tab-btn-cell">
+            <i class="fa-solid fa-microscope text-lg"></i>
+            <span class="text-[10px]">생명</span>
+        </button>
+        <button onclick="switchTab('quiz')" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400" id="m-tab-btn-quiz">
+            <i class="fa-solid fa-vial-circle-check text-lg"></i>
+            <span class="text-[10px]">퀴즈</span>
+        </button>
+        <button onclick="switchTab('log')" class="mobile-tab-btn flex flex-col items-center gap-1 text-slate-400" id="m-tab-btn-log">
+            <i class="fa-solid fa-clipboard-list text-lg"></i>
+            <span class="text-[10px]">일지</span>
+        </button>
+    </div>
+
+    <!-- MAIN WRAPPER -->
+    <main class="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 pb-24 md:pb-6 flex flex-col gap-6">
+
+        <!-- 1. TAB: CHEMICAL LAB -->
+        <section id="tab-content-lab" class="tab-content flex flex-col lg:flex-row gap-6">
+            <!-- Left Panel: Beaker Simulation Canvas -->
+            <div class="flex-1 glass-panel rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden min-h-[450px]">
+                <!-- Grid background inside beaker panel -->
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+                
+                <!-- Beaker Lab Header -->
+                <div class="flex justify-between items-start z-10">
+                    <div>
+                        <span class="px-2.5 py-1 rounded bg-labBlue/10 border border-labBlue/30 text-xs text-labNeonBlue font-medium uppercase tracking-wider">CH1. 원소 결합과 양적 관계</span>
+                        <h2 class="text-2xl font-bold mt-2">반응물 가상 합성 비커</h2>
+                        <p class="text-xs text-slate-400 mt-1">원하는 물질을 추가하여 몰 수 반응 결과를 시각적으로 확인해 보세요.</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400">비커 온도</span>
+                        <div class="text-lg font-bold font-orbitron text-orange-400">25.0 °C</div>
+                    </div>
+                </div>
+
+                <!-- Central Beaker & Interactive Area -->
+                <div class="my-8 flex justify-center items-center relative h-64">
+                    <!-- Glass Beaker UI container -->
+                    <div id="beaker-container" class="relative w-48 h-56 border-b-8 border-x-4 border-slate-300/60 rounded-b-3xl flex items-end overflow-hidden shadow-2xl transition-all duration-300">
+                        <!-- Liquid scale lines -->
+                        <div class="absolute left-2 top-4 w-4 h-[1px] bg-white/40"></div>
+                        <div class="absolute left-2 top-12 w-3 h-[1px] bg-white/40"></div>
+                        <div class="absolute left-2 top-20 w-4 h-[1px] bg-white/40"></div>
+                        <div class="absolute left-2 top-28 w-3 h-[1px] bg-white/40"></div>
+                        <div class="absolute left-2 top-36 w-4 h-[1px] bg-white/40"></div>
+                        <div class="absolute left-2 top-44 w-3 h-[1px] bg-white/40"></div>
+                        
+                        <span class="absolute left-8 top-11 text-[9px] text-white/30 font-orbitron">200ml</span>
+                        <span class="absolute left-8 top-27 text-[9px] text-white/30 font-orbitron">100ml</span>
+
+                        <!-- Liquid element inside beaker -->
+                        <div id="beaker-fluid" class="beaker-liquid w-full h-[30%] bg-blue-500/40 relative">
+                            <!-- Bubbles inside liquid -->
+                            <div class="absolute bottom-2 left-[20%] w-2 h-2 rounded-full bg-white/40 bubble-element" style="animation-delay: 0.2s"></div>
+                            <div class="absolute bottom-1 left-[50%] w-3 h-3 rounded-full bg-white/50 bubble-element" style="animation-delay: 0.8s"></div>
+                            <div class="absolute bottom-3 left-[75%] w-1.5 h-1.5 rounded-full bg-white/30 bubble-element" style="animation-delay: 1.4s"></div>
+                            <div class="absolute bottom-5 left-[40%] w-2 h-2 rounded-full bg-white/40 bubble-element" style="animation-delay: 2s"></div>
+                        </div>
+                    </div>
+
+                    <!-- Molecule Indicator Bubble (Hovering next to Beaker) -->
+                    <div id="molecule-display" class="absolute right-10 top-1/2 -translate-y-1/2 glass-panel-light p-3.5 rounded-2xl border border-white/10 flex flex-col items-center gap-1 min-w-[120px] shadow-lg animate-pulse transition-all duration-300">
+                        <span class="text-[10px] text-slate-400">결합 모형 식별기</span>
+                        <div id="molecule-badge" class="text-3xl mt-1">🧪</div>
+                        <div id="molecule-formula" class="font-orbitron font-bold text-labNeonBlue text-lg">H₂O</div>
+                        <span id="molecule-desc" class="text-[9px] text-slate-400">안정된 액체 상태</span>
+                    </div>
+
+                </div>
+
+                <!-- Reaction Equations Panel -->
+                <div class="glass-panel-light p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-labBlue/10 flex items-center justify-center text-labNeonBlue border border-labBlue/20">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-400">선택된 반응 제어식</div>
+                            <div id="equation-text" class="font-orbitron text-sm font-semibold tracking-wide text-slate-200">2H₂ (수소) + O₂ (산소) → 2H₂O (물)</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <button onclick="triggerSynthesis()" class="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-labBlue to-labMint hover:from-labNeonBlue hover:to-labNeonMint text-slate-950 font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md shadow-labBlue/20">
+                            <i class="fa-solid fa-play mr-1"></i> 실험 반응 실행
+                        </button>
+                        <button onclick="resetBeaker()" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs transition-all">
+                            초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Controls & Chemical Library -->
+            <div class="w-full lg:w-96 flex flex-col gap-6">
+                <!-- Reactants Sliders / Amount Settings -->
+                <div class="glass-panel rounded-3xl p-6 flex flex-col gap-5">
+                    <h3 class="text-md font-bold flex items-center gap-2 border-b border-white/10 pb-3">
+                        <i class="fa-solid fa-sliders text-labNeonBlue"></i> 화학적 양적 반응 조건
+                    </h3>
+                    
+                    <!-- Reactant A Slider -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-medium text-slate-300" id="slider-label-a">반응물 A (수소 H₂)</span>
+                            <span id="value-display-a" class="font-orbitron font-bold text-labNeonBlue">2.0 mol</span>
+                        </div>
+                        <input type="range" id="reactant-a-slider" min="0" max="5" step="0.5" value="2" oninput="updateChemicalSliders()" class="w-full accent-labBlue bg-slate-900 rounded-lg appearance-none h-2 cursor-pointer">
+                        <div class="flex justify-between text-[9px] text-slate-500">
+                            <span>0 mol</span>
+                            <span>5 mol</span>
+                        </div>
+                    </div>
+
+                    <!-- Reactant B Slider -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-medium text-slate-300" id="slider-label-b">반응물 B (산소 O₂)</span>
+                            <span id="value-display-b" class="font-orbitron font-bold text-labNeonMint">1.0 mol</span>
+                        </div>
+                        <input type="range" id="reactant-b-slider" min="0" max="5" step="0.5" value="1" oninput="updateChemicalSliders()" class="w-full accent-labMint bg-slate-900 rounded-lg appearance-none h-2 cursor-pointer">
+                        <div class="flex justify-between text-[9px] text-slate-500">
+                            <span>0 mol</span>
+                            <span>5 mol</span>
+                        </div>
+                    </div>
+
+                    <!-- Reaction Output Log -->
+                    <div class="bg-slate-950/80 p-3.5 rounded-xl border border-white/5 flex flex-col gap-2">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">실시간 반응 한계 반응물 계산</div>
+                        <div id="limiting-reactant-badge" class="text-xs text-labNeonBlue flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-exclamation"></i> 양적 비율이 완전 일치합니다 (미반응물 없음)
+                        </div>
+                        <div class="h-[1px] bg-white/10 my-1"></div>
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span>생성 물질:</span>
+                            <span id="result-product-text" class="font-bold text-labNeonMint">H₂O : 2.0 mol</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chem Reaction Presets Library -->
+                <div class="glass-panel rounded-3xl p-6 flex-1 flex flex-col gap-4">
+                    <h3 class="text-md font-bold flex items-center gap-2 border-b border-white/10 pb-3">
+                        <i class="fa-solid fa-folder-open text-labNeonMint"></i> 실험 레시피 북 (학습 과목)
+                    </h3>
+                    
+                    <div class="flex flex-col gap-2 overflow-y-auto max-h-64 pr-1">
+                        <!-- Recipe 1 -->
+                        <button onclick="selectChemicalRecipe('water')" id="recipe-water" class="recipe-item w-full p-3 rounded-xl border border-labBlue/30 bg-labBlue/5 hover:bg-labBlue/10 flex items-center gap-3 text-left transition-all">
+                            <div class="text-2xl">💧</div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-bold text-slate-200">물의 가상 합성</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">2H₂ + O₂ → 2H₂O (양적 관계 기본)</p>
+                            </div>
+                        </button>
+
+                        <!-- Recipe 2 -->
+                        <button onclick="selectChemicalRecipe('ammonia')" id="recipe-ammonia" class="recipe-item w-full p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 text-left transition-all">
+                            <div class="text-2xl">💨</div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-bold text-slate-200">하버법 암모니아 합성</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">N₂ + 3H₂ → 2NH₃ (고난도 양적 계산)</p>
+                            </div>
+                        </button>
+
+                        <!-- Recipe 3 -->
+                        <button onclick="selectChemicalRecipe('neutral')" id="recipe-neutral" class="recipe-item w-full p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 text-left transition-all">
+                            <div class="text-2xl">🧪</div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-bold text-slate-200">산·염기 중화 반응</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">HCl + NaOH → NaCl + H₂O</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. TAB: CELL VIEWER -->
+        <section id="tab-content-cell" class="tab-content hidden flex flex-col lg:flex-row gap-6">
+            <!-- Microscope View Frame (Left) -->
+            <div class="flex-1 glass-panel rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden min-h-[480px]">
+                <!-- Microscope Grid Layer -->
+                <div class="absolute inset-0 border-8 border-slate-900 rounded-3xl pointer-events-none z-20"></div>
+                <!-- Reticle focus lines -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 z-10">
+                    <div class="w-80 h-80 rounded-full border border-labNeonMint animate-pulse"></div>
+                    <div class="w-[1px] h-full bg-labNeonMint absolute"></div>
+                    <div class="h-[1px] w-full bg-labNeonMint absolute"></div>
+                </div>
+
+                <div class="flex justify-between items-start z-10">
+                    <div>
+                        <span class="px-2.5 py-1 rounded bg-labMint/10 border border-labMint/30 text-xs text-labNeonMint font-medium uppercase tracking-wider">CH2. 세포 소기관과 생명 시스템</span>
+                        <h2 class="text-2xl font-bold mt-2">초정밀 생명 분자 현미경</h2>
+                        <p class="text-xs text-slate-400 mt-1">현미경의 배율을 조정하며, 세포 속 소기관들의 실제 구조와 작동 모습을 확인하세요.</p>
+                    </div>
+                    <div class="bg-slate-950/80 px-3 py-1.5 rounded-xl border border-white/10">
+                        <span class="text-[10px] text-slate-400 uppercase font-orbitron block">현미경 배율</span>
+                        <span id="microscope-mag" class="text-sm font-black font-orbitron text-labNeonMint">X 10,000</span>
+                    </div>
+                </div>
+
+                <!-- Cell Container Canvas with Interactive Microscope Display -->
+                <div class="my-4 flex items-center justify-center relative overflow-hidden h-[300px]">
+                    <div id="cell-zoomer" class="micro-scale w-full h-full flex flex-col items-center justify-center relative scale-100">
+                        
+                        <!-- Core Cell Image / SVG Representation (dynamic depending on level) -->
+                        <div id="organelle-container" class="relative w-72 h-72 rounded-full border border-dashed border-labNeonMint/30 flex items-center justify-center bg-emerald-950/20">
+                            <!-- Inside the organelle (Nucleus & DNA / Mitochondria) -->
+                            <div id="organelle-graphic" class="relative w-full h-full flex items-center justify-center">
+                                <!-- Default Nucleus Display -->
+                                <div class="w-28 h-28 rounded-full bg-purple-900/30 border-2 border-purple-400/50 flex items-center justify-center relative shadow-lg">
+                                    <div class="w-16 h-16 rounded-full bg-purple-800/40 border border-purple-300/30 flex items-center justify-center">
+                                        <!-- Ribosome particles -->
+                                        <div class="absolute w-1.5 h-1.5 rounded-full bg-purple-300 top-2 left-6"></div>
+                                        <div class="absolute w-1.5 h-1.5 rounded-full bg-purple-300 bottom-4 right-8"></div>
+                                        <i class="fa-solid fa-dna text-3xl text-purple-300 animate-pulse"></i>
+                                    </div>
+                                    <span class="absolute -bottom-6 text-[10px] font-bold text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/30">세포핵 (Nucleus)</span>
+                                </div>
+                                
+                                <!-- Floating Ribosomes / Golgi -->
+                                <div class="absolute top-10 left-12 w-8 h-4 rounded-full border border-emerald-400/30 bg-emerald-900/10 text-[9px] flex items-center justify-center text-slate-400">리보솜</div>
+                                <div class="absolute bottom-12 right-12 w-12 h-6 rounded-full border border-cyan-400/30 bg-cyan-900/10 text-[9px] flex items-center justify-center text-slate-400">골지체</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Info banner -->
+                <div class="glass-panel-light p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 z-10">
+                    <div class="flex items-center gap-3">
+                        <div id="organelle-badge" class="w-10 h-10 rounded-xl bg-purple-900/20 flex items-center justify-center text-purple-400 border border-purple-500/20 text-lg">
+                            🧬
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-400" id="organelle-mini-title">기초 유전 정보 컨트롤 타워</div>
+                            <div id="organelle-name" class="text-sm font-bold text-slate-200">세포핵 (Cell Nucleus)</div>
+                        </div>
+                    </div>
+                    <p id="organelle-desc" class="text-xs text-slate-400 max-w-sm md:text-right">
+                        DNA가 이중 나선 구조로 보존되어 있으며, 모든 생명 활동을 제어하는 단백질 합성 신호를 보내는 핵심적인 소기관입니다.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Microscope Control Menu (Right) -->
+            <div class="w-full lg:w-96 flex flex-col gap-6">
+                <!-- Navigation / Zoom Selector -->
+                <div class="glass-panel rounded-3xl p-6 flex flex-col gap-5">
+                    <h3 class="text-md font-bold flex items-center gap-2 border-b border-white/10 pb-3">
+                        <i class="fa-solid fa-magnifying-glass-plus text-labNeonMint"></i> 줌 포커스 조정
+                    </h3>
+
+                    <div class="flex flex-col gap-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-300">단계별 관찰 선택</span>
+                            <span class="text-[10px] text-slate-400">드래그 가능</span>
+                        </div>
+                        
+                        <!-- Range slide for zoom -->
+                        <input type="range" id="cell-zoom-slider" min="1" max="3" value="1" step="1" oninput="changeCellZoom()" class="w-full accent-labMint bg-slate-900 rounded-lg appearance-none h-2 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-bold">
+                            <span class="text-slate-300">1단계 (10k)</span>
+                            <span class="text-slate-300">2단계 (50k)</span>
+                            <span class="text-slate-300">3단계 (100k)</span>
+                        </div>
+                    </div>
+
+                    <!-- Organelle Bio Specs -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">세포 내 탐구 연계 분석</div>
+                        <ul class="text-xs text-slate-300 space-y-1.5 list-disc pl-4" id="organelle-specs">
+                            <li>세포 생명 정보의 핵심 보관소</li>
+                            <li>mRNA 전사 과정을 통해 단백질 합성 기틀 마련</li>
+                            <li>학종 추천 탐구: "센트럴 도그마 전사 기전론"</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Life Organelles Navigation Library -->
+                <div class="glass-panel rounded-3xl p-6 flex-1 flex flex-col gap-4">
+                    <h3 class="text-md font-bold flex items-center gap-2 border-b border-white/10 pb-3">
+                        <i class="fa-solid fa-dna text-labNeonMint"></i> 주요 소기관 신속 이동
+                    </h3>
+
+                    <div class="flex flex-col gap-2">
+                        <!-- Card 1 -->
+                        <button onclick="selectOrganelle('nucleus')" id="org-btn-nucleus" class="organelle-card-btn w-full p-3 rounded-xl border border-labMint/30 bg-labMint/5 hover:bg-labMint/10 flex items-center gap-3 text-left transition-all">
+                            <div class="text-2xl">🧬</div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">세포핵 (Nucleus)</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">유전 자료 보존 및 총괄 제어</p>
+                            </div>
+                        </button>
+
+                        <!-- Card 2 -->
+                        <button onclick="selectOrganelle('mitochondria')" id="org-btn-mitochondria" class="organelle-card-btn w-full p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 text-left transition-all">
+                            <div class="text-2xl">⚡</div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">미토콘드리아 (Mitochondria)</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">세포 호흡 및 에너지 생성 (ATP)</p>
+                            </div>
+                        </button>
+
+                        <!-- Card 3 -->
+                        <button onclick="selectOrganelle('chloroplast')" id="org-btn-chloroplast" class="organelle-card-btn w-full p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 text-left transition-all">
+                            <div class="text-2xl">🌿</div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">엽록체 (Chloroplast)</h4>
+                                <p class="text-[10px] text-slate-400 mt-0.5">광합성을 통한 유기물 생성</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. TAB: QUIZ ROOM -->
+        <section id="tab-content-quiz" class="tab-content hidden flex flex-col lg:flex-row gap-6">
+            <!-- Quiz Left Panel -->
+            <div class="flex-1 glass-panel rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden min-h-[480px]">
+                <div>
+                    <!-- Quiz Progress Indicator -->
+                    <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded bg-slate-800 border border-white/10 text-xs text-slate-300 font-bold">킬러 문항 훈련</span>
+                            <span id="quiz-badge" class="text-xs text-labNeonBlue font-semibold bg-labBlue/10 px-2 py-0.5 rounded border border-labBlue/20">화학 양적 관계</span>
+                        </div>
+                        <div class="text-xs text-slate-400">
+                            문제 상태: <span id="quiz-step-indicator" class="text-labNeonMint font-bold font-orbitron">01 / 03</span>
+                        </div>
+                    </div>
+
+                    <!-- Actual Question Content -->
+                    <div class="my-6">
+                        <h3 id="quiz-question-title" class="text-lg md:text-xl font-bold leading-relaxed">
+                            질소 기체(N₂)와 수소 기체(H₂)가 반응하여 암모니아 기체(NH₃)를 생성하는 반응이 비커에서 일어난다. 질소 1mol과 수소 6mol을 반응시켰을 때 한계 반응물과 반응이 끝난 뒤 남은 총 몰 수는?
+                        </h3>
+                        
+                        <!-- Simulated view of the problem (Mini graphical hint) -->
+                        <div class="mt-4 p-4 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">💡</span>
+                                <div>
+                                    <div class="text-xs text-slate-300 font-bold">도움말 힌트 사용 가능</div>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">아래의 '단계별 힌트 보기' 버튼을 사용하면 문제 해결 실마리를 순차적으로 줍니다.</p>
+                                </div>
+                            </div>
+                            <button id="hint-btn" onclick="revealHint()" class="px-3.5 py-1.5 rounded-lg bg-labBlue/10 hover:bg-labBlue/20 border border-labBlue/30 text-xs text-labNeonBlue font-bold transition-all">
+                                1단계 힌트 보기
+                            </button>
+                        </div>
+
+                        <!-- Revealed Hint Box -->
+                        <div id="hint-display-box" class="hidden mt-3 p-3.5 rounded-xl bg-slate-900 border border-yellow-500/30 text-xs text-yellow-300/90 leading-relaxed transition-all duration-300">
+                            <strong>[힌트 1단계]</strong> 화학 반응식의 계수비는 분자 수의 변화(몰수 비)와 같습니다. 반응식: N₂ + 3H₂ → 2NH₃
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Answer Selections (Dynamic) -->
+                <div class="flex flex-col gap-2 my-4" id="quiz-choices-container">
+                    <button onclick="checkAnswer(0)" class="quiz-choice-btn w-full p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:bg-white/5 text-left text-sm transition-all flex justify-between items-center group">
+                        <span>1) 한계 반응물: 수소 기체 (H₂) / 남은 총 몰수: 4mol</span>
+                        <i class="fa-regular fa-circle text-slate-500 group-hover:text-slate-300 transition-colors"></i>
+                    </button>
+                    <button onclick="checkAnswer(1)" class="quiz-choice-btn w-full p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:bg-white/5 text-left text-sm transition-all flex justify-between items-center group">
+                        <span>2) 한계 반응물: 질소 기체 (N₂) / 남은 총 몰수: 5mol</span>
+                        <i class="fa-regular fa-circle text-slate-500 group-hover:text-slate-300 transition-colors"></i>
+                    </button>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex justify-between items-center border-t border-white/10 pt-4 mt-auto">
+                    <button id="prev-quiz-btn" onclick="prevQuiz()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs transition-all opacity-50 cursor-not-allowed" disabled>
+                        이전 문제
+                    </button>
+                    <button id="next-quiz-btn" onclick="nextQuiz()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-labBlue to-labMint text-slate-950 font-bold text-xs tracking-wider transition-all shadow-md shadow-labBlue/10 hover:shadow-labMint/30 hover:scale-[1.02]">
+                        다음 문제로 이동 <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Fail/Success Visualizer (Right Panel) -->
+            <div class="w-full lg:w-96 flex flex-col gap-6">
+                <!-- Live Virtual Result -->
+                <div class="glass-panel rounded-3xl p-6 flex flex-col gap-4 text-center">
+                    <h3 class="text-md font-bold text-left flex items-center gap-2 border-b border-white/10 pb-3">
+                        <i class="fa-solid fa-circle-play text-labNeonBlue"></i> 실시간 채점 시뮬레이션
+                    </h3>
+
+                    <!-- Visual status of chemical/cell container -->
+                    <div id="quiz-anim-box" class="h-44 rounded-2xl bg-slate-950/80 border border-white/5 flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300">
+                        
+                        <!-- Normal State -->
+                        <div id="quiz-anim-idle" class="flex flex-col items-center gap-2 transition-opacity duration-300">
+                            <div class="text-5xl animate-pulse-slow">🔬</div>
+                            <span class="text-xs text-slate-400 mt-2">정답을 선택하여 제출하면,<br>가상 반응이 즉시 활성화됩니다.</span>
+                        </div>
+
+                        <!-- Success State -->
+                        <div id="quiz-anim-success" class="hidden flex flex-col items-center gap-2 text-labNeonMint absolute inset-0 justify-center bg-labMint/10">
+                            <div class="text-5xl animate-bounce">✨🧪✨</div>
+                            <span class="text-sm font-bold text-glow-mint mt-2">실험 완전 성공!</span>
+                            <span class="text-[10px] text-slate-300">논리적 설계가 완벽하게 일치합니다.</span>
+                        </div>
+
+                        <!-- Exploded State -->
+                        <div id="quiz-anim-fail" class="hidden flex flex-col items-center gap-2 text-labCrimson absolute inset-0 justify-center bg-red-950/40">
+                            <div class="text-6xl animate-ping absolute duration-75 opacity-70">💥</div>
+                            <div class="text-5xl relative animate-shake">💥🔥</div>
+                            <span class="text-sm font-bold text-red-400 mt-2">비커 폭발 및 실험 실패!</span>
+                            <span class="text-[10px] text-red-200">실패 원인이 연구 일지에 기록되었습니다.</span>
+                        </div>
+                    </div>
+
+                    <!-- Mini status stats -->
+                    <div class="grid grid-cols-2 gap-3 text-left">
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <span class="text-[9px] text-slate-400 block">현재 오답 수</span>
+                            <span id="wrong-count-badge" class="text-sm font-bold font-orbitron text-red-400">0 건</span>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <span class="text-[9px] text-slate-400 block">정답률</span>
+                            <span id="accuracy-badge" class="text-sm font-bold font-orbitron text-labNeonMint">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Failure Logger Trigger Card -->
+                <div class="glass-panel rounded-3xl p-6 flex-1 flex flex-col justify-between gap-4">
+                    <div>
+                        <h3 class="text-md font-bold flex items-center gap-2 border-b border-white/10 pb-3">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400"></i> 오답 연구 실패 분석
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-3 leading-relaxed">
+                            틀린 퀴즈 정보는 단순히 감점으로 끝나는 것이 아니라, 과학적인 <strong class="text-slate-200">'실험 오차 리포트'</strong> 형태로 변환되어 연구 일지에 영구 보존됩니다.
+                        </p>
+                    </div>
+                    <button onclick="switchTab('log')" class="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-book-journal-whills"></i> 나의 연구 일지 확인하기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. TAB: RESEARCH LOG -->
+        <section id="tab-content-log" class="tab-content hidden flex flex-col lg:flex-row gap-6">
+            <!-- Left Side: Interactive Lab Notebook -->
+            <div class="flex-1 glass-panel rounded-3xl p-6 flex flex-col gap-6 relative">
+                <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center text-slate-950 font-bold text-lg shadow-lg">
+                            📒
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold">화학·생명 결합 연구 일지</h2>
+                            <p class="text-xs text-slate-400">실험 실패 오차 보고서 및 취약점 분석</p>
+                        </div>
+                    </div>
+                    <button onclick="clearResearchLogs()" class="px-3 py-1.5 rounded-lg bg-red-950/30 hover:bg-red-900/50 text-red-300 text-[11px] border border-red-500/30 transition-all flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i> 전체 초기화
+                    </button>
+                </div>
+
+                <!-- Logs Accumulator Grid -->
+                <div id="journal-logs-container" class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                    <!-- Logs will be rendered here dynamically via JS -->
+                </div>
+
+                <!-- Dynamically generated logs empty state if no log is there -->
+                <div id="journal-empty-state" class="hidden flex-col items-center justify-center py-16 text-slate-500">
+                    <div class="text-5xl opacity-50 mb-3">📭</div>
+                    <p class="text-sm font-medium text-slate-400">등록된 실험 오차 분석 보고서가 없습니다.</p>
+                    <p class="text-xs text-slate-500 mt-1">퀴즈룸에서 문제를 틀리면 이곳에 데이터가 쌓입니다.</p>
+                </div>
+            </div>
+
+            <!-- Right Side: Portfolio / School Record Suggestions -->
+            <div class="w-full lg:w-96 flex flex-col gap-6">
+                <!-- Portfolio Generation Suggestion Box -->
+                <div class="glass-panel rounded-3xl p-6 flex flex-col gap-4">
+                    <div class="flex items-center gap-2 border-b border-white/10 pb-3">
+                        <span class="text-xl">📊</span>
+                        <h3 class="text-md font-bold text-labNeonBlue">학생부(세특) 연계 추출기</h3>
+                    </div>
+
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        내가 실패하고 오차를 수정한 누적 데이터를 기반으로, 학교 생활기록부 <strong class="text-slate-300">세특용 탐구 소논문/보고서 맞춤 키워드</strong>를 AI가 제안합니다.
+                    </p>
+
+                    <!-- Realtime Generated Keywords based on logs -->
+                    <div class="flex flex-col gap-2.5 mt-2">
+                        <div class="p-3 rounded-xl bg-slate-900 border border-white/5 hover:border-labBlue/30 transition-colors">
+                            <span class="text-[9px] text-slate-400 block uppercase font-orbitron mb-1">탐구 키워드 제안 #1</span>
+                            <span class="text-[13px] font-bold text-labNeonBlue leading-tight">"가역 반응 합성법 조건에서의 계량화학적 오차 분석 연구"</span>
+                            <span class="text-[10px] text-slate-500 block mt-1">하버법 합성 원리와 르샤틀리에 원리를 연계한 탐구</span>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-slate-900 border border-white/5 hover:border-labMint/30 transition-colors">
+                            <span class="text-[9px] text-slate-400 block uppercase font-orbitron mb-1">탐구 키워드 제안 #2</span>
+                            <span class="text-[13px] font-bold text-labNeonMint leading-tight">"센트럴 도그마 기반 비정상 아미노산 합성 제어 기법"</span>
+                            <span class="text-[10px] text-slate-500 block mt-1">RNA 오차 전사와 유전자 가위 기법에 대한 탐구</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-4 relative">
+                        <button onclick="exportToClipboard()" class="w-full py-3 rounded-xl bg-gradient-to-r from-labBlue to-labMint hover:from-labNeonBlue hover:to-labNeonMint text-slate-950 font-bold text-xs tracking-wider transition-all shadow-lg hover:scale-[1.02]">
+                            <i class="fa-solid fa-copy mr-1"></i> 추천 탐구 키워드 복사하기
+                        </button>
+                        <!-- Copy Alert Container -->
+                        <div id="copy-toast" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 border border-labNeonMint text-labNeonMint text-[10px] px-3 py-1.5 rounded-full font-bold shadow-lg whitespace-nowrap z-50">
+                            <i class="fa-solid fa-check mr-1"></i> 성공적으로 복사되었습니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- HELP MODAL POPUP -->
+    <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-opacity">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 border border-white/20 flex flex-col gap-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="text-lg font-bold flex items-center gap-2 text-labNeonMint">
+                    <i class="fa-solid fa-circle-info"></i> 비커앤셀 가이드라인
+                </h3>
+                <button onclick="toggleHelpModal()" class="text-slate-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full bg-white/5">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="text-[13px] text-slate-300 space-y-3 leading-relaxed py-2">
+                <p><strong>비커앤셀 (Beaker & Cell)</strong>은 화면 속 가상 실험을 통해 직관적으로 개념을 이해하는 앱입니다.</p>
+                <ul class="list-disc pl-5 space-y-2 text-slate-400">
+                    <li><strong class="text-labNeonBlue">화학 실험실:</strong> 수량 슬라이더를 움직여 원재료량을 맞추고 '실험 실행' 버튼을 누르면 물질이 비커에 시각적으로 차오릅니다.</li>
+                    <li><strong class="text-labNeonMint">생명 현미경:</strong> 가상 줌 슬라이더를 우측으로 넘기며 고배율(세포핵 → 미토콘드리아 → 엽록체)로 소기관을 관찰합니다.</li>
+                    <li><strong class="text-purple-300">킬러 퀴즈룸:</strong> 퀴즈 오답 발생 시, 가상 실험 기구가 폭발하는 이펙트와 함께 <strong class="text-amber-300">연구 일지</strong>에 오답 원인이 자동 기록됩니다.</li>
+                </ul>
+            </div>
+            <button onclick="toggleHelpModal()" class="w-full py-3 mt-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold transition-all">
+                확인하고 실험 시작하기
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT CODE -->
+    <script>
+        // App State
+        let currentTab = 'lab';
+        let reactantA = 2.0;
+        let reactantB = 1.0;
+        let selectedRecipe = 'water';
+        
+        let microscopeMagStep = 1;
+        let wrongQuizCount = 0;
+        let totalQuizzesSolved = 0; // Total attempts
+        let currentQuizIndex = 0;
+
+        // Interactive Research Log DB (In-memory storage)
+        let researchLogs = [
+            {
+                subject: "화학 I (기체의 양적 계산)",
+                date: "2026.06.12 15:10",
+                title: "실험 오차 발생: 하버법 퀴즈 오답 기록",
+                desc: "계수비와 실제 몰수 소모 비율 간의 괴리로 인해 질소 1mol과 수소 6mol 반응 중 한계 반응물 정의 단계에서 오차 발생.",
+                reason: "한계 반응물 지정 오류 (수소 3mol 소모 필요)",
+                tag: "개념 보완 요망",
+                color: "labBlue"
+            },
+            {
+                subject: "생명과학 I (유전 전사 메커니즘)",
+                date: "2026.06.12 14:45",
+                title: "실험 오차 발생: 센트럴 도그마 핵산 대조 오답",
+                desc: "RNA 전사 시 DNA 주형 가닥과의 염기 서열 수소 결합 매칭 과정에서 유라실(U)과 티민(T)의 사용처 혼동.",
+                reason: "유라실(U) - 티민(T) 매핑 관계 미숙지",
+                tag: "암기 미흡",
+                color: "labMint"
+            }
+        ];
+
+        // Quizzes Array Dataset
+        const quizDataset = [
+            {
+                subject: "화학 양적 관계",
+                tagColor: "labBlue",
+                question: "질소 기체(N₂)와 수소 기체(H₂)가 반응하여 암모니아 기체(NH₃)를 생성하는 반응이 비커에서 일어난다. 질소 1mol과 수소 6mol을 완전 반응시켰을 때 한계 반응물과 반응 종료 후 남아 있는 총 기체의 몰 수는?",
+                hint1: "우선 올바른 균형 화학 반응식부터 유도하세요: N₂ + 3H₂ → 2NH₃",
+                hint2: "계수 비율 1 : 3 : 2 에 따라서 질소 1mol이 모두 소모되려면 수소는 3mol만 있으면 됩니다. 즉 한계반응물은 질소(N₂)입니다. 수소는 3mol이 고스란히 남아있게 되고 새로 합성된 암모니아는 2mol이 생성됩니다.",
+                choices: [
+                    "1) 한계 반응물: 수소 기체 (H₂) / 남은 총 몰수: 4mol",
+                    "2) 한계 반응물: 질소 기체 (N₂) / 남은 총 몰수: 5mol (수소 3mol + 암모니아 2mol)"
+                ],
+                correctIndex: 1,
+                wrongReason: "하버법 계수 매칭 오차 및 생성된 생성물의 몰수(2mol) 합산 누락"
+            },
+            {
+                subject: "세포 소기관과 기능",
+                tagColor: "labMint",
+                question: "세포 내부에서 포도당과 같은 유기물을 산소와 반응시켜 산화시킴으로써 생명 활동에 에너지가 되는 고에너지 인산화물인 ATP를 생성하는 소기관은?",
+                hint1: "이 소기관은 2중 막 구조를 가지며, 자체적인 DNA와 리보솜을 가지고 있어 자가 복제가 가능합니다.",
+                hint2: "보통 '세포 발전소'로 비유되며 산소를 소모하여 세포 호흡에 기여합니다.",
+                choices: [
+                    "1) 엽록체 (Chloroplast)",
+                    "2) 세포핵 (Nucleus)",
+                    "3) 미토콘드리아 (Mitochondria)"
+                ],
+                correctIndex: 2,
+                wrongReason: "엽록체(광합성 담당) 혹은 세포핵과 미토콘드리아의 에너지 발전 기능 혼동"
+            },
+            {
+                subject: "화학 산·염기 중화반응",
+                tagColor: "labBlue",
+                question: "0.1M 염산(HCl) 수용액 100mL에 0.1M 수산화나트륨(NaOH) 수용액 100mL를 가해 혼합하였다. 이때 반응에 의해 생성되는 혼합 수용액의 상태에 대한 설명으로 알맞은 것은?",
+                hint1: "일가산과 일가염기의 중화반응입니다. 알짜 이온 반응식은 H⁺ + OH⁻ → H₂O 입니다.",
+                hint2: "반응하는 수소 이온의 몰수(0.1 × 0.1 = 0.01 mol)와 수산화 이온의 몰수가 완전 대칭형으로 완결됩니다.",
+                choices: [
+                    "1) 완전 중화되어 중성 상태이며 알짜 이온은 존재하지 않는다.",
+                    "2) 완전 중화되어 중성이며, 나트륨 이온과 염화 이온이 구경꾼 이온으로 잔존한다."
+                ],
+                correctIndex: 1,
+                wrongReason: "알짜 이온반응 완결 시 구경꾼 이온(Na⁺, Cl⁻)의 실질 잔존 상태 간과"
+            }
+        ];
+
+        // Chemical Synthesis Presets Data
+        const chemicalRecipes = {
+            water: {
+                equation: "2H₂ (수소) + O₂ (산소) → 2H₂O (물)",
+                labelA: "반응물 A (수소 H₂)",
+                labelB: "반응물 B (산소 O₂)",
+                product: "H₂O",
+                badge: "💧",
+                desc: "안정적인 액체 물 합성",
+                calculate: (a, b) => {
+                    let ratioA = a / 2;
+                    let ratioB = b / 1;
+                    let minRatio = Math.min(ratioA, ratioB);
+                    let productMols = minRatio * 2;
+                    let leftA = a - (minRatio * 2);
+                    let leftB = b - (minRatio * 1);
+                    
+                    let limitText = "";
+                    if (ratioA < ratioB) {
+                        limitText = `한계반응물: 수소 H₂ (산소 ${leftB.toFixed(1)} mol 잔류)`;
+                    } else if (ratioB < ratioA) {
+                        limitText = `한계반응물: 산소 O₂ (수소 ${leftA.toFixed(1)} mol 잔류)`;
+                    } else {
+                        limitText = "완전 비례 반응 (잔류 가스 없음)";
+                    }
+                    return { productMols, limitText };
+                }
+            },
+            ammonia: {
+                equation: "N₂ (질소) + 3H₂ (수소) → 2NH₃ (암모니아)",
+                labelA: "반응물 A (질소 N₂)",
+                labelB: "반응물 B (수소 H₂)",
+                product: "NH₃",
+                badge: "💨",
+                desc: "기체 암모니아 가압 합성",
+                calculate: (a, b) => {
+                    let ratioA = a / 1;
+                    let ratioB = b / 3;
+                    let minRatio = Math.min(ratioA, ratioB);
+                    let productMols = minRatio * 2;
+                    let leftA = a - (minRatio * 1);
+                    let leftB = b - (minRatio * 3);
+
+                    let limitText = "";
+                    if (ratioA < ratioB) {
+                        limitText = `한계반응물: 질소 N₂ (수소 ${leftB.toFixed(1)} mol 잔류)`;
+                    } else if (ratioB < ratioA) {
+                        limitText = `한계반응물: 수소 H₂ (질소 ${leftA.toFixed(1)} mol 잔류)`;
+                    } else {
+                        limitText = "완전 비례 반응 (잔류 가스 없음)";
+                    }
+                    return { productMols, limitText };
+                }
+            },
+            neutral: {
+                equation: "HCl (염산) + NaOH (수산화나트륨) → NaCl + H₂O",
+                labelA: "반응물 A (염산 HCl)",
+                labelB: "반응물 B (수산화나트륨 NaOH)",
+                product: "NaCl",
+                badge: "🧪",
+                desc: "완벽한 중화 염수 상태 완성",
+                calculate: (a, b) => {
+                    let minRatio = Math.min(a, b);
+                    let productMols = minRatio;
+                    let leftA = a - minRatio;
+                    let leftB = b - minRatio;
+
+                    let limitText = "";
+                    if (a < b) {
+                        limitText = `한계반응물: HCl (염기성 초과: NaOH ${leftB.toFixed(1)} mol 잔류)`;
+                    } else if (b < a) {
+                        limitText = `한계반응물: NaOH (산성 초과: HCl ${leftA.toFixed(1)} mol 잔류)`;
+                    } else {
+                        limitText = "완전 중화 도달 (pH 7.0)";
+                    }
+                    return { productMols, limitText };
+                }
+            }
+        };
+
+        // Microscope Cell Spec Data
+        const cellSpecs = {
+            nucleus: {
+                badge: "🧬",
+                mag: "X 10,000",
+                mini: "기초 유전 정보 컨트롤 타워",
+                name: "세포핵 (Cell Nucleus)",
+                desc: "DNA가 이중 나선 구조로 보존되어 있으며, 모든 생명 활동을 제어하는 단백질 합성 신호를 보내는 핵심적인 소기관입니다.",
+                points: [
+                    "세포 생명 정보의 핵심 보관소",
+                    "mRNA 전사 과정을 통해 단백질 합성 기틀 마련",
+                    "학종 추천 탐구: 센트럴 도그마 전사 기전론"
+                ],
+                graphicHtml: `
+                    <div class="w-28 h-28 rounded-full bg-purple-900/30 border-2 border-purple-400/50 flex items-center justify-center relative shadow-[0_0_30px_rgba(168,85,247,0.2)]">
+                        <div class="w-16 h-16 rounded-full bg-purple-800/40 border border-purple-300/30 flex items-center justify-center">
+                            <div class="absolute w-1.5 h-1.5 rounded-full bg-purple-300 top-2 left-6 animate-pulse"></div>
+                            <div class="absolute w-1.5 h-1.5 rounded-full bg-purple-300 bottom-4 right-8 animate-pulse" style="animation-delay: 0.5s"></div>
+                            <i class="fa-solid fa-dna text-3xl text-purple-300 animate-pulse"></i>
+                        </div>
+                        <span class="absolute -bottom-6 text-[10px] font-bold text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/30 whitespace-nowrap">세포핵 (Nucleus)</span>
+                    </div>
+                `
+            },
+            mitochondria: {
+                badge: "⚡",
+                mag: "X 50,000",
+                mini: "세포 생존 에너지 생산소",
+                name: "미토콘드리아 (Mitochondria)",
+                desc: "산소와 포도당을 연료로 사용하여 ATP라는 세포 수준 생물화학 연료 화합물을 생산하는 발전소 세포 소기관입니다.",
+                points: [
+                    "외막과 다공성 내막(크리스타) 이중 구조 가짐",
+                    "TCA 회로 및 전자 전달계를 통한 ATP 양산",
+                    "학종 추천 탐구: 세포 호흡 미토콘드리아 내막 수소 이온 구배 분석"
+                ],
+                graphicHtml: `
+                    <div class="w-36 h-20 rounded-full bg-amber-900/30 border-2 border-amber-500/50 flex flex-col items-center justify-center relative overflow-hidden px-4 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                        <div class="w-[120%] h-1 bg-amber-500/30 rotate-12 my-1"></div>
+                        <div class="w-[120%] h-1 bg-amber-500/30 -rotate-12 my-1"></div>
+                        <i class="fa-solid fa-bolt text-amber-300 text-xl animate-bounce absolute"></i>
+                        <span class="absolute -bottom-1 text-[8px] font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30 whitespace-nowrap">미토콘드리아</span>
+                    </div>
+                `
+            },
+            chloroplast: {
+                badge: "🌿",
+                mag: "X 100,000",
+                mini: "빛을 유기물로 전환하는 유기 공장",
+                name: "엽록체 (Chloroplast)",
+                desc: "식물 세포에만 분포하며, 광에너지(태양빛)를 흡수하여 이산화탄소와 물로부터 탄수화물을 독자 합성(광합성)하는 자급자족 중심체입니다.",
+                points: [
+                    "엽록소(Chlorophyll) 색소로 인해 녹색 방출",
+                    "그라나 및 스트로마 이중 컴파트먼트 구조",
+                    "학종 추천 탐구: 광도합성 명반응 스트로마 내부 캘빈 회로 탐사"
+                ],
+                graphicHtml: `
+                    <div class="w-28 h-28 rounded-[2rem] bg-emerald-900/30 border-2 border-emerald-400/50 flex items-center justify-center relative shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                        <div class="flex flex-col gap-1 items-center z-10 absolute">
+                            <div class="flex gap-1">
+                                <div class="w-4 h-2 bg-emerald-400/50 rounded-sm"></div>
+                                <div class="w-4 h-2 bg-emerald-400/50 rounded-sm"></div>
+                            </div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-2 bg-emerald-400/50 rounded-sm"></div>
+                                <div class="w-4 h-2 bg-emerald-400/50 rounded-sm"></div>
+                            </div>
+                            <i class="fa-solid fa-leaf text-emerald-400 text-lg mt-1 animate-pulse"></i>
+                        </div>
+                        <span class="absolute -bottom-6 text-[10px] font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30 whitespace-nowrap">엽록체 (Chloroplast)</span>
+                    </div>
+                `
+            }
+        };
+
+        // --- CORE INITS ---
+        function initApp() {
+            updateChemicalSliders();
+            renderLogs();
+            loadQuiz(0);
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            currentTab = tabId;
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(element => {
+                element.classList.add('hidden');
+            });
+            // Show target
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+
+            // Handle active styling on desktop navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 text-slate-400 hover:text-slate-200 hover:bg-white/5";
+            });
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                if (tabId === 'lab') activeBtn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-labBlue/20 to-labBlue/10 text-labNeonBlue border border-labBlue/30";
+                else if (tabId === 'cell') activeBtn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-labMint/20 to-labMint/10 text-labNeonMint border border-labMint/30";
+                else if (tabId === 'quiz') activeBtn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-purple-500/20 to-purple-500/10 text-purple-300 border border-purple-500/30";
+                else if (tabId === 'log') activeBtn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-amber-500/20 to-amber-500/10 text-amber-300 border border-amber-500/30";
+            }
+
+            // Handle active styling on mobile navigation
+            document.querySelectorAll('.mobile-tab-btn').forEach(mBtn => {
+                mBtn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-slate-400";
+            });
+            const mActiveBtn = document.getElementById(`m-tab-btn-${tabId}`);
+            if (mActiveBtn) {
+                if (tabId === 'lab') mActiveBtn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-labNeonBlue";
+                else if (tabId === 'cell') mActiveBtn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-labNeonMint";
+                else if (tabId === 'quiz') mActiveBtn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-purple-300";
+                else if (tabId === 'log') mActiveBtn.className = "mobile-tab-btn flex flex-col items-center gap-1 text-amber-300";
+            }
+        }
+
+        // --- SECTION 1: CHEMICAL LAB SCRIPTS ---
+        function selectChemicalRecipe(recipeKey) {
+            selectedRecipe = recipeKey;
+            
+            // Toggle active classes on recipe list
+            document.querySelectorAll('.recipe-item').forEach(btn => {
+                btn.className = "recipe-item w-full p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 text-left transition-all";
+            });
+            const activeRecipeBtn = document.getElementById(`recipe-${recipeKey}`);
+            if (activeRecipeBtn) {
+                activeRecipeBtn.className = "recipe-item w-full p-3 rounded-xl border border-labBlue/30 bg-labBlue/10 flex items-center gap-3 text-left transition-all shadow-md shadow-black/20";
+            }
+
+            // Update UI Labels and values
+            const recipeData = chemicalRecipes[recipeKey];
+            document.getElementById('equation-text').innerText = recipeData.equation;
+            document.getElementById('slider-label-a').innerText = recipeData.labelA;
+            document.getElementById('slider-label-b').innerText = recipeData.labelB;
+
+            // Reset Sliders
+            document.getElementById('reactant-a-slider').value = 2;
+            document.getElementById('reactant-b-slider').value = 1;
+
+            updateChemicalSliders();
+        }
+
+        function updateChemicalSliders() {
+            reactantA = parseFloat(document.getElementById('reactant-a-slider').value);
+            reactantB = parseFloat(document.getElementById('reactant-b-slider').value);
+
+            document.getElementById('value-display-a').innerText = `${reactantA.toFixed(1)} mol`;
+            document.getElementById('value-display-b').innerText = `${reactantB.toFixed(1)} mol`;
+
+            const activeRecipe = chemicalRecipes[selectedRecipe];
+            const result = activeRecipe.calculate(reactantA, reactantB);
+
+            // Update calculation view
+            document.getElementById('limiting-reactant-badge').innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${result.limitText}`;
+            document.getElementById('result-product-text').innerText = `${activeRecipe.product} : ${result.productMols.toFixed(1)} mol`;
+
+            // Adjust Beaker Fluid Height visually (Mapping 0-10 mols to 10%-85% height)
+            const beakerFluid = document.getElementById('beaker-fluid');
+            const totalInputMols = reactantA + reactantB;
+            let heightPercent = 10 + (totalInputMols * 7.5);
+            if (heightPercent > 85) heightPercent = 85;
+            beakerFluid.style.height = `${heightPercent}%`;
+
+            // Color coding per recipe
+            if (selectedRecipe === 'water') {
+                beakerFluid.className = "beaker-liquid w-full bg-blue-500/40 relative";
+            } else if (selectedRecipe === 'ammonia') {
+                beakerFluid.className = "beaker-liquid w-full bg-emerald-500/40 relative";
+            } else if (selectedRecipe === 'neutral') {
+                beakerFluid.className = "beaker-liquid w-full bg-indigo-500/50 relative";
+            }
+
+            // Molecule visual updates
+            document.getElementById('molecule-formula').innerText = activeRecipe.product;
+            document.getElementById('molecule-badge').innerText = activeRecipe.badge;
+            document.getElementById('molecule-desc').innerText = activeRecipe.desc;
+        }
+
+        function triggerSynthesis() {
+            const beakerFluid = document.getElementById('beaker-fluid');
+            const container = document.getElementById('beaker-container');
+            const display = document.getElementById('molecule-display');
+            
+            // Flash and shake effects
+            container.classList.add('animate-shake');
+            beakerFluid.classList.add('brightness-150', 'scale-y-105');
+            display.classList.remove('animate-pulse');
+            display.classList.add('border-labNeonMint', 'scale-110', 'shadow-[0_0_20px_rgba(52,211,153,0.4)]', 'bg-labMint/10');
+
+            setTimeout(() => {
+                container.classList.remove('animate-shake');
+                beakerFluid.classList.remove('brightness-150', 'scale-y-105');
+                display.classList.add('animate-pulse');
+                display.classList.remove('border-labNeonMint', 'scale-110', 'shadow-[0_0_20px_rgba(52,211,153,0.4)]', 'bg-labMint/10');
+            }, 600);
+        }
+
+        function resetBeaker() {
+            document.getElementById('reactant-a-slider').value = 2;
+            document.getElementById('reactant-b-slider').value = 1;
+            updateChemicalSliders();
+        }
+
+        // --- SECTION 2: MICROSCOPE VIEW SCRIPTS ---
+        function changeCellZoom() {
+            const zoomValue = parseInt(document.getElementById('cell-zoom-slider').value);
+            if (zoomValue === 1) selectOrganelle('nucleus');
+            else if (zoomValue === 2) selectOrganelle('mitochondria');
+            else if (zoomValue === 3) selectOrganelle('chloroplast');
+        }
+
+        function selectOrganelle(organelleKey) {
+            const data = cellSpecs[organelleKey];
+            const slider = document.getElementById('cell-zoom-slider');
+            const zoomer = document.getElementById('cell-zoomer');
+            
+            // Sync slider and apply zoom transform
+            if (organelleKey === 'nucleus') {
+                slider.value = 1;
+                zoomer.style.transform = 'scale(1)';
+            } else if (organelleKey === 'mitochondria') {
+                slider.value = 2;
+                zoomer.style.transform = 'scale(1.2)';
+            } else if (organelleKey === 'chloroplast') {
+                slider.value = 3;
+                zoomer.style.transform = 'scale(1.4)';
+            }
+
+            // Update DOM
+            document.getElementById('microscope-mag').innerText = data.mag;
+            document.getElementById('organelle-badge').innerText = data.badge;
+            document.getElementById('organelle-mini-title').innerText = data.mini;
+            document.getElementById('organelle-name').innerText = data.name;
+            document.getElementById('organelle-desc').innerText = data.desc;
+            document.getElementById('organelle-graphic').innerHTML = data.graphicHtml;
+
+            const specsContainer = document.getElementById('organelle-specs');
+            specsContainer.innerHTML = '';
+            data.points.forEach(point => {
+                const li = document.createElement('li');
+                li.innerText = point;
+                specsContainer.appendChild(li);
+            });
+
+            // Button highlights
+            document.querySelectorAll('.organelle-card-btn').forEach(btn => {
+                btn.className = "organelle-card-btn w-full p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 text-left transition-all";
+            });
+            document.getElementById(`org-btn-${organelleKey}`).className = "organelle-card-btn w-full p-3 rounded-xl border border-labMint/30 bg-labMint/10 flex items-center gap-3 text-left transition-all shadow-md";
+        }
+
+        // --- SECTION 3: QUIZ ROOM SCRIPTS ---
+        function loadQuiz(index) {
+            currentQuizIndex = index;
+            const q = quizDataset[index];
+
+            document.getElementById('quiz-step-indicator').innerText = `0${index + 1} / 0${quizDataset.length}`;
+            
+            const badge = document.getElementById('quiz-badge');
+            badge.innerText = q.subject;
+            badge.className = `text-xs font-semibold px-2 py-0.5 rounded border ${q.tagColor === 'labBlue' ? 'text-labNeonBlue bg-labBlue/10 border-labBlue/20' : 'text-labNeonMint bg-labMint/10 border-labMint/20'}`;
+            
+            document.getElementById('quiz-question-title').innerText = q.question;
+
+            // Hint resets
+            const hintDisplay = document.getElementById('hint-display-box');
+            hintDisplay.classList.add('hidden');
+            document.getElementById('hint-btn').innerText = "1단계 힌트 보기";
+
+            // Render Choices
+            const container = document.getElementById('quiz-choices-container');
+            container.innerHTML = '';
+            q.choices.forEach((choice, choiceIdx) => {
+                const btn = document.createElement('button');
+                btn.onclick = () => checkAnswer(choiceIdx);
+                btn.className = "quiz-choice-btn w-full p-4 rounded-2xl border border-white/10 bg-slate-900/40 hover:bg-white/10 text-left text-sm transition-all flex justify-between items-center group";
+                btn.innerHTML = `<span>${choice}</span><i class="fa-regular fa-circle text-slate-500 group-hover:text-slate-300"></i>`;
+                container.appendChild(btn);
+            });
+
+            // Nav buttons
+            const prevBtn = document.getElementById('prev-quiz-btn');
+            const nextBtn = document.getElementById('next-quiz-btn');
+
+            if (index === 0) {
+                prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                prevBtn.disabled = true;
+            } else {
+                prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                prevBtn.disabled = false;
+            }
+
+            if (index === quizDataset.length - 1) {
+                nextBtn.innerHTML = `처음으로 리셋 <i class="fa-solid fa-rotate-right ml-1"></i>`;
+            } else {
+                nextBtn.innerHTML = `다음 문제로 이동 <i class="fa-solid fa-arrow-right ml-1"></i>`;
+            }
+
+            resetQuizAnim();
+        }
+
+        function revealHint() {
+            const hintBox = document.getElementById('hint-display-box');
+            const hintBtn = document.getElementById('hint-btn');
+            const q = quizDataset[currentQuizIndex];
+
+            if (hintBox.classList.contains('hidden')) {
+                hintBox.innerHTML = `<strong>[힌트 1단계]</strong> ${q.hint1}`;
+                hintBox.classList.remove('hidden');
+                hintBtn.innerText = "2단계 심화 힌트";
+            } else if (hintBox.innerHTML.includes(q.hint1) && !hintBox.innerHTML.includes(q.hint2)) {
+                hintBox.innerHTML = `<strong>[힌트 2단계]</strong> ${q.hint2}`;
+                hintBtn.innerText = "힌트 닫기";
+            } else {
+                hintBox.classList.add('hidden');
+                hintBtn.innerText = "1단계 힌트 보기";
+            }
+        }
+
+        function checkAnswer(selectedIndex) {
+            const q = quizDataset[currentQuizIndex];
+            const buttons = document.querySelectorAll('.quiz-choice-btn');
+
+            // Disable all buttons after clicking
+            buttons.forEach(btn => btn.onclick = null);
+            totalQuizzesSolved++;
+
+            const animBox = document.getElementById('quiz-anim-box');
+            const animIdle = document.getElementById('quiz-anim-idle');
+            const animSuccess = document.getElementById('quiz-anim-success');
+            const animFail = document.getElementById('quiz-anim-fail');
+
+            if (selectedIndex === q.correctIndex) {
+                // SUCCESS
+                buttons[selectedIndex].className = "quiz-choice-btn w-full p-4 rounded-2xl border border-labMint/40 bg-labMint/10 text-left text-sm transition-all flex justify-between items-center shadow-md shadow-labMint/10";
+                buttons[selectedIndex].querySelector('i').className = "fa-solid fa-circle-check text-labNeonMint";
+
+                addMasteryXP(50);
+
+                animIdle.classList.add('hidden');
+                animSuccess.classList.remove('hidden');
+                animBox.classList.add('border-labMint/40');
+
+            } else {
+                // FAIL (Explosion)
+                buttons[selectedIndex].className = "quiz-choice-btn w-full p-4 rounded-2xl border border-red-500/40 bg-red-950/30 text-left text-sm transition-all flex justify-between items-center";
+                buttons[selectedIndex].querySelector('i').className = "fa-solid fa-circle-xmark text-red-400";
+                
+                // Highlight correct one slightly
+                buttons[q.correctIndex].className = "quiz-choice-btn w-full p-4 rounded-2xl border border-labMint/30 bg-labMint/5 text-left text-sm transition-all flex justify-between items-center opacity-70";
+                buttons[q.correctIndex].querySelector('i').className = "fa-regular fa-circle-check text-labNeonMint";
+
+                wrongQuizCount++;
+                document.getElementById('wrong-count-badge').innerText = `${wrongQuizCount} 건`;
+
+                animIdle.classList.add('hidden');
+                animFail.classList.remove('hidden');
+                animBox.classList.add('border-red-500/40');
+
+                // Generate Research Log dynamically
+                const dateObj = new Date();
+                const timestamp = `${dateObj.getFullYear()}.${(dateObj.getMonth()+1).toString().padStart(2, '0')}.${dateObj.getDate().toString().padStart(2, '0')} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+                
+                const newErrLog = {
+                    subject: `${q.subject} (실패 기록)`,
+                    date: timestamp,
+                    title: `가상 시뮬레이션 폭발 분석: ${q.subject}`,
+                    desc: `${q.question.substring(0, 75)}... 문제풀이 오동작으로 오차 리포트 접수.`,
+                    reason: q.wrongReason,
+                    tag: "오류 긴급 피드백",
+                    color: q.tagColor
+                };
+
+                researchLogs.unshift(newErrLog); // Add to top
+                renderLogs();
+            }
+
+            // Update accuracy
+            const correctM = totalQuizzesSolved - wrongQuizCount;
+            const accuracyVal = Math.round((correctM / totalQuizzesSolved) * 100);
+            document.getElementById('accuracy-badge').innerText = `${accuracyVal}%`;
+        }
+
+        function resetQuizAnim() {
+            const box = document.getElementById('quiz-anim-box');
+            box.classList.remove('border-labMint/40', 'border-red-500/40');
+            document.getElementById('quiz-anim-idle').classList.remove('hidden');
+            document.getElementById('quiz-anim-success').classList.add('hidden');
+            document.getElementById('quiz-anim-fail').classList.add('hidden');
+        }
+
+        function nextQuiz() {
+            if (currentQuizIndex === quizDataset.length - 1) loadQuiz(0);
+            else loadQuiz(currentQuizIndex + 1);
+        }
+
+        function prevQuiz() {
+            if (currentQuizIndex > 0) loadQuiz(currentQuizIndex - 1);
+        }
+
+        function addMasteryXP(value) {
+            const masteryBadge = document.getElementById('header-mastery');
+            let currentXp = parseInt(masteryBadge.innerText);
+            currentXp += value;
+            masteryBadge.innerText = `${currentXp} XP`;
+        }
+
+        // --- SECTION 4: RESEARCH LOGS SCRIPTS ---
+        function renderLogs() {
+            const logsContainer = document.getElementById('journal-logs-container');
+            const emptyState = document.getElementById('journal-empty-state');
+
+            if (researchLogs.length === 0) {
+                logsContainer.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+
+            logsContainer.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+
+            logsContainer.innerHTML = '';
+            researchLogs.forEach((log, i) => {
+                const isBlue = log.color === 'labBlue';
+                const tagClasses = isBlue 
+                    ? "bg-labBlue/10 border-labBlue/30 text-labNeonBlue" 
+                    : "bg-labMint/10 border-labMint/30 text-labNeonMint";
+
+                const logCard = document.createElement('div');
+                logCard.className = `p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-3 animate-fadeIn mb-4`;
+                logCard.style.animationDelay = `${i * 0.1}s`;
+                
+                logCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="px-2 py-0.5 rounded border text-[10px] font-medium ${tagClasses}">${log.subject}</span>
+                        <span class="text-[10px] text-slate-500 font-orbitron">${log.date}</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-200">${log.title}</h4>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">${log.desc}</p>
+                    
+                    <div class="p-3 rounded-xl bg-slate-900 border border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs mt-1">
+                        <div class="flex items-start sm:items-center gap-2">
+                            <span class="text-red-400 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation"></i> 분석 원인:</span>
+                            <span class="text-slate-300">${log.reason}</span>
+                        </div>
+                        <span class="text-[10px] bg-red-950/50 text-red-300 border border-red-900/50 px-2 py-1 rounded whitespace-nowrap self-start sm:self-auto">${log.tag}</span>
+                    </div>
+                `;
+                logsContainer.appendChild(logCard);
+            });
+        }
+
+        function clearResearchLogs() {
+            if(confirm("정말로 모든 오답 실험 기록을 삭제하시겠습니까?")) {
+                researchLogs = [];
+                renderLogs();
+            }
+        }
+
+        function exportToClipboard() {
+            const keywordText = `[비커앤셀 탐구 키워드 제안]\n1. 가역 반응 합성법 조건에서의 계량화학적 오차 분석 연구\n2. 센트럴 도그마 기반 비정상 아미노산 합성 제어 기법`;
+            
+            // Fallback for document execution environments (like iframes)
+            const textArea = document.createElement("textarea");
+            textArea.value = keywordText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const toast = document.getElementById('copy-toast');
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3000);
+            } catch (err) {
+                console.error('클립보드 복사 실패', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function toggleHelpModal() {
+            const modal = document.getElementById('help-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Initialize App on load
+        window.onload = initApp;
+    </script>
+</body>
+</html>
